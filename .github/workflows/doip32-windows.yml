@@ -36,6 +36,10 @@ jobs:
         shell: pwsh
         run: pnpm install --no-frozen-lockfile --ignore-scripts
 
+      - name: Build interface base
+        shell: pwsh
+        run: pnpm --filter @emdzej/ediabasx-interface-base build
+
       - name: Build ENET transport
         shell: pwsh
         run: pnpm --filter @emdzej/ediabasx-interface-enet build
