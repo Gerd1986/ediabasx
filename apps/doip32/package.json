@@ -1,0 +1,20 @@
+{
+  "name": "@gerd1986/doip32",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Tool32-style BMW PRG/GRP job runner with embedded EdiabasX and direct ENET/DoIP transport.",
+  "type": "module",
+  "main": "dist/main.js",
+  "dependencies": {
+    "@emdzej/ediabasx-ediabas": "workspace:*",
+    "@emdzej/ediabasx-interface-enet": "workspace:*"
+  },
+  "devDependencies": { "@types/node": "^22.13.5" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "lint": "eslint .",
+    "start": "node dist/main.js"
+  }
+}
