@@ -6,6 +6,7 @@ export interface EnetInterfaceOptions {
   port?: number;
   testerAddress?: number;
   connectTimeoutMs?: number;
+  onTrace?: (direction: "TX" | "RX", data: Uint8Array) => void;
 }
 
 /**
@@ -28,6 +29,7 @@ export class EnetInterface extends EdiabasInterface {
   private frames: Buffer[] = [];
   private waiters: Array<() => void> = [];
   private lastRequest?: Buffer;
+  private readonly onTrace?: (direction: "TX" | "RX", data: Uint8Array) => void;
 
   constructor(options: EnetInterfaceOptions) {
     super();
@@ -35,6 +37,7 @@ export class EnetInterface extends EdiabasInterface {
     this.port = options.port ?? 6801;
     this.testerAddress = options.testerAddress ?? 0xf4;
     this.connectTimeoutMs = options.connectTimeoutMs ?? 5000;
+    this.onTrace = options.onTrace;
   }
 
   async connect(): Promise<void> {
@@ -94,6 +97,7 @@ export class EnetInterface extends EdiabasInterface {
 
     // An ACK may contain an echo of the request. Keep it for validation.
     this.lastRequest = frame;
+    this.onTrace?.("TX", frame);
     await writeAll(socket, frame);
 
     const ack = await this.takeFrame(this.connectTimeoutMs + 5000, f =>
@@ -111,6 +115,7 @@ export class EnetInterface extends EdiabasInterface {
       throw new Error("Invalid HSFZ diagnostic response length");
     const source = frame[6];
     const payload = frame.subarray(8, 8 + dataLength);
+    this.onTrace?.("RX", frame);
     return encodeBmwFast(0xf1, source, payload);
   }
 
