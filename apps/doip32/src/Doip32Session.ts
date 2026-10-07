@@ -5,6 +5,7 @@ export interface Doip32Options {
   ecuPath: string;
   host: string;
   port?: number;
+  onTrace?: (direction: "TX" | "RX", data: Uint8Array) => void;
 }
 
 export class Doip32Session {
@@ -12,7 +13,7 @@ export class Doip32Session {
   private readonly ediabas: Ediabas;
 
   constructor(options: Doip32Options) {
-    this.iface = new EnetInterface({ host: options.host, port: options.port ?? 6801 });
+    this.iface = new EnetInterface({ host: options.host, port: options.port ?? 6801, onTrace: options.onTrace });
     this.ediabas = new Ediabas({ ecuPath: options.ecuPath, interface: this.iface });
   }
 
