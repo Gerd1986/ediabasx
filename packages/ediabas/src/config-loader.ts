@@ -176,9 +176,11 @@ export const defaultInterfaceFactory: InterfaceFactory = async (config: Interfac
       });
     
     case 'enet':
-      // EnetInterface not fully implemented yet, store config for future use
-      log.warn('EnetInterface not fully implemented yet');
-      return new EnetInterface();
+      return new EnetInterface({
+        host: config.enet.host,
+        port: config.enet.port,
+        testerAddress: config.enet.testerAddress,
+      });
     
     case 'gateway':
       return new GatewayClient({
