@@ -9,12 +9,33 @@
     "@emdzej/ediabasx-ediabas": "workspace:*",
     "@emdzej/ediabasx-interface-enet": "workspace:*"
   },
-  "devDependencies": { "@types/node": "^22.13.5" },
+  "devDependencies": {
+    "@types/node": "^22.13.5",
+    "electron": "^38.2.0",
+    "electron-builder": "^26.0.12"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests",
     "lint": "eslint .",
-    "start": "node dist/main.js"
+    "start": "electron .",
+    "dist:win": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "de.gerd1986.doip32",
+    "productName": "DoIP32",
+    "asar": true,
+    "files": [
+      "dist/**/*",
+      "ui/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "artifactName": "DoIP32-${version}-Windows.${ext}"
+    }
   }
 }
