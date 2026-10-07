@@ -9,6 +9,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     name: Windows / Node 22
@@ -66,3 +69,14 @@ jobs:
           name: DoIP32-Windows
           path: apps/doip32/dist/*.exe
           if-no-files-found: error
+
+
+      - name: Publish GitHub Release
+        if: github.event_name == 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: doip32-v0.1.0
+          name: DoIP32 v0.1.0
+          prerelease: true
+          generate_release_notes: true
+          files: apps/doip32/dist/DoIP32-0.1.0-Windows.exe
