@@ -34,7 +34,7 @@ jobs:
 
       - name: Install workspace dependencies
         shell: pwsh
-        run: pnpm install --no-frozen-lockfile
+        run: pnpm --filter @gerd1986/doip32... install --no-frozen-lockfile
 
       - name: Build ENET transport
         shell: pwsh
@@ -44,6 +44,6 @@ jobs:
         shell: pwsh
         run: pnpm --filter @emdzej/ediabasx-interface-enet typecheck
 
-      - name: Build complete workspace
+      - name: Build DoIP32 with workspace dependencies
         shell: pwsh
-        run: pnpm build
+        run: pnpm --filter @gerd1986/doip32... build
