@@ -36,6 +36,10 @@ jobs:
         shell: pwsh
         run: pnpm install --no-frozen-lockfile --ignore-scripts
 
+      - name: Install Electron runtime
+        shell: pwsh
+        run: pnpm --filter @gerd1986/doip32 rebuild electron
+
       - name: Build interface base
         shell: pwsh
         run: pnpm --filter @emdzej/ediabasx-interface-base build
@@ -51,3 +55,14 @@ jobs:
       - name: Build DoIP32 with workspace dependencies
         shell: pwsh
         run: pnpm --filter @gerd1986/doip32... --filter !@emdzej/ediabasx-mac-ftdi-latency build
+
+      - name: Package DoIP32.exe
+        shell: pwsh
+        run: pnpm --filter @gerd1986/doip32 dist:win
+
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: DoIP32-Windows
+          path: apps/doip32/release/*.exe
+          if-no-files-found: error
