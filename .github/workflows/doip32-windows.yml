@@ -64,5 +64,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DoIP32-Windows
-          path: apps/doip32/release/*.exe
+          path: apps/doip32/dist/*.exe
           if-no-files-found: error
