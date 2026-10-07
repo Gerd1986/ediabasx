@@ -34,7 +34,7 @@ jobs:
 
       - name: Install workspace dependencies
         shell: pwsh
-        run: pnpm --filter @gerd1986/doip32... install --no-frozen-lockfile
+        run: pnpm install --no-frozen-lockfile --ignore-scripts
 
       - name: Build ENET transport
         shell: pwsh
