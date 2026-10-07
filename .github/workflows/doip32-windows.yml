@@ -1,0 +1,49 @@
+name: DoIP32 Windows CI
+
+on:
+  push:
+    branches:
+      - feature/doip32
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Windows / Node 22
+    runs-on: windows-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Enable Corepack
+        shell: pwsh
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Activate repository pnpm version
+        shell: pwsh
+        run: corepack prepare pnpm@10.33.1 --activate
+
+      - name: Install workspace dependencies
+        shell: pwsh
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build ENET transport
+        shell: pwsh
+        run: pnpm --filter @emdzej/ediabasx-interface-enet build
+
+      - name: Typecheck ENET transport
+        shell: pwsh
+        run: pnpm --filter @emdzej/ediabasx-interface-enet typecheck
+
+      - name: Build complete workspace
+        shell: pwsh
+        run: pnpm build
