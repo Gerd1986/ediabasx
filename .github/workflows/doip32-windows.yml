@@ -50,4 +50,4 @@ jobs:
 
       - name: Build DoIP32 with workspace dependencies
         shell: pwsh
-        run: pnpm --filter @gerd1986/doip32... build
+        run: pnpm --filter @gerd1986/doip32... --filter !@emdzej/ediabasx-mac-ftdi-latency build
