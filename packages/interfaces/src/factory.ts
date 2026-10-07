@@ -53,7 +53,10 @@ export function createInterface(name: string, rawOptions: InterfaceOptions = {})
         url: options.url as string | undefined
       });
     case "enet":
-      return new EnetInterface();
+      return new EnetInterface({
+        host: options.host as string,
+        port: options.port as number | undefined
+      });
     case "serial":
     case "kdcan":
       return createSerialInterface(options);
