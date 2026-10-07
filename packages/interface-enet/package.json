@@ -23,5 +23,8 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/emdzej/ediabasx.git"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.5"
   }
 }
