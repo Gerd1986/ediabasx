@@ -1,2 +1,3 @@
+/* eslint-disable @typescript-eslint/no-var-requires -- Electron preload uses CommonJS .cts */
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("doip32",{pickEcuPath:()=>ipcRenderer.invoke("pick-ecu-path"),pickSgbd:()=>ipcRenderer.invoke("pick-sgbd"),discoverEnet:()=>ipcRenderer.invoke("discover-enet"),openSgbd:(cfg:unknown)=>ipcRenderer.invoke("open-sgbd",cfg),connect:()=>ipcRenderer.invoke("connect"),disconnect:()=>ipcRenderer.invoke("disconnect"),runJob:(job:string,params:string[])=>ipcRenderer.invoke("run-job",job,params),onTrace:(cb:(x:unknown)=>void)=>ipcRenderer.on("wire-trace",(_e: unknown,x: unknown)=>cb(x))});
