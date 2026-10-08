@@ -1,6 +1,6 @@
 {
   "name": "@gerd1986/doip32",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "description": "Tool32-style BMW PRG/GRP job runner with embedded EdiabasX and direct ENET/DoIP transport.",
   "type": "module",
