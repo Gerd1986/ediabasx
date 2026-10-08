@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - feature/doip32
-      - release/doip32-v0.2.0
+      - fix/doip32-runtime-deps
   pull_request:
     branches:
       - main
@@ -76,8 +76,8 @@ jobs:
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: doip32-v0.2.0
-          name: DoIP32 v0.2.0
+          tag_name: doip32-v0.2.1
+          name: DoIP32 v0.2.1
           prerelease: true
           generate_release_notes: true
-          files: apps/doip32/dist/DoIP32-0.2.0-Windows.exe
+          files: apps/doip32/dist/DoIP32-0.2.1-Windows.exe
