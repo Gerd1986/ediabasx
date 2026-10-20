@@ -4,13 +4,16 @@ import os from "node:os";
 
 export interface EnetDevice { ip: string; localIp: string; vin?: string }
 
+const HSFZ_IDENT_REQUEST = Buffer.from([0, 0, 0, 0, 0, 0x11]);
+const KNOWN_LINK_LOCAL_GATEWAYS = ["169.254.199.99", "169.254.1.1"];
+
 function tcpReachable(host: string, localAddress: string, timeoutMs: number): Promise<boolean> {
   return new Promise(resolve => {
     const socket = net.createConnection({ host, port: 6801, localAddress });
-    let done = false;
+    let finished = false;
     const finish = (ok: boolean) => {
-      if (done) return;
-      done = true;
+      if (finished) return;
+      finished = true;
       socket.destroy();
       resolve(ok);
     };
@@ -22,50 +25,67 @@ function tcpReachable(host: string, localAddress: string, timeoutMs: number): Pr
   });
 }
 
+function parseIdentification(data: Buffer): { vin?: string } | undefined {
+  // BMW HSFZ identification response: 4-byte length, 2-byte control 0x0011.
+  if (data.length < 6 || data.readUInt16BE(4) !== 0x11) return undefined;
+  if (data.readUInt32BE(0) !== data.length - 6) return undefined;
+  const ascii = data.toString("ascii", 6);
+  if (!ascii.includes("DIAGADR")) return undefined;
+  const match = /BMWVIN([A-HJ-NPR-Z0-9]{17})/.exec(ascii);
+  return { vin: match?.[1] };
+}
+
+async function discoverOnInterface(localIp: string, timeoutMs: number): Promise<EnetDevice[]> {
+  return new Promise(resolve => {
+    const found = new Map<string, EnetDevice>();
+    const socket = dgram.createSocket("udp4");
+    let finished = false;
+    const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      socket.close();
+      resolve([...found.values()]);
+    };
+    const timer = setTimeout(finish, timeoutMs);
+    socket.on("error", finish);
+    socket.on("message", (data, remote) => {
+      const identification = parseIdentification(data);
+      if (!identification || remote.address === localIp) return;
+      found.set(remote.address, { ip: remote.address, localIp, vin: identification.vin });
+    });
+    socket.bind(0, localIp, () => {
+      try {
+        socket.setBroadcast(true);
+        socket.send(HSFZ_IDENT_REQUEST, 6811, "255.255.255.255");
+        if (localIp.startsWith("169.254.")) {
+          socket.send(HSFZ_IDENT_REQUEST, 6811, "169.254.255.255");
+        }
+      } catch { finish(); }
+    });
+  });
+}
+
 export async function discoverEnet(timeoutMs = 2500): Promise<EnetDevice[]> {
   const interfaces = Object.values(os.networkInterfaces()).flatMap(x => x ?? [])
     .filter(x => x.family === "IPv4" && !x.internal);
   const devices = new Map<string, EnetDevice>();
   await Promise.all(interfaces.map(async iface => {
-    // UDP discovery is retained for gateways that answer broadcast identification.
-    await new Promise<void>(resolve => {
-      const socket = dgram.createSocket("udp4");
-      let finished = false;
-      const finish = () => {
-        if (finished) return;
-        finished = true;
-        clearTimeout(timer);
-        socket.close();
-        resolve();
-      };
-      const timer = setTimeout(finish, timeoutMs);
-      socket.on("error", finish);
-      socket.on("message", (data, remote) => {
-        // Accept replies regardless of UDP source port.
-        const vinMatch = data.toString("ascii").match(/[A-HJ-NPR-Z0-9]{17}/);
-        devices.set(remote.address, { ip: remote.address, localIp: iface.address, vin: vinMatch?.[0] });
-      });
-      socket.bind(0, iface.address, () => {
-        try {
-          socket.setBroadcast(true);
-          const request = Buffer.from([0, 0, 0, 0]);
-          socket.send(request, 6811, "255.255.255.255");
-          if (iface.address.startsWith("169.254.")) {
-            socket.send(request, 6811, "169.254.255.255");
-          }
-        } catch { finish(); }
-      });
-    });
-
-    // BMW F-series gateways commonly expose HSFZ at 169.254.199.99:6801.
-    // TCP connection is a read-only reachability probe, not an ECU job.
-    // Bind the source address to this interface to avoid detecting a gateway
-    // via Wi-Fi, a VPN or a different adapter.
-    if (iface.address.startsWith("169.254.")) {
-      const candidate = "169.254.199.99";
-      if (await tcpReachable(candidate, iface.address, Math.min(timeoutMs, 1500))) {
-        devices.set(candidate, { ip: candidate, localIp: iface.address });
+    const discovered = await discoverOnInterface(iface.address, timeoutMs);
+    for (const device of discovered) {
+      if (await tcpReachable(device.ip, iface.address, 1200)) {
+        devices.set(device.ip, device);
       }
+    }
+    // Fallback for BMW gateways that do not answer UDP identification.
+    // Do not scan an entire subnet or send ECU diagnostic requests.
+    if (iface.address.startsWith("169.254.")) {
+      await Promise.all(KNOWN_LINK_LOCAL_GATEWAYS.map(async ip => {
+        if (devices.has(ip)) return;
+        if (await tcpReachable(ip, iface.address, 1200)) {
+          devices.set(ip, { ip, localIp: iface.address });
+        }
+      }));
     }
   }));
   return [...devices.values()];
