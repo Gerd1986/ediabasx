@@ -108,15 +108,34 @@ export class EnetInterface extends EdiabasInterface {
   }
 
   async receive(timeoutMs = 2000): Promise<Uint8Array> {
-    const frame = await this.takeFrame(timeoutMs, f => f.length >= 8 && f[5] === 0x01);
-    const payloadLength = frame.readUInt32BE(0);
-    const dataLength = payloadLength - 2;
-    if (dataLength < 1 || frame.length < dataLength + 8)
-      throw new Error("Invalid HSFZ diagnostic response length");
-    const source = frame[6];
-    const payload = frame.subarray(8, 8 + dataLength);
-    this.onTrace?.("RX", frame);
-    return encodeBmwFast(0xf1, source, payload);
+    const request = this.lastRequest;
+    let deadline = Date.now() + timeoutMs;
+    let pending = false;
+    for (;;) {
+      const frame = await this.takeFrame(Math.max(0, deadline - Date.now()), f => {
+        if (f.length < 9 || f[5] !== 0x01) return false;
+        if (!request) return true;
+        if (f[6] !== request[7] || f[7] !== request[6]) return false;
+        const sid = request[8];
+        if (f[8] === 0x7f) return f.length >= 11 && f[9] === sid;
+        if (f[8] !== ((sid + 0x40) & 0xff)) return false;
+        // ReadDataByIdentifier responses echo the requested identifier.
+        return sid !== 0x22 || (f.length >= 11 && f[9] === request[9] && f[10] === request[10]);
+      });
+      const payloadLength = frame.readUInt32BE(0);
+      const dataLength = payloadLength - 2;
+      if (dataLength < 1 || frame.length !== dataLength + 8)
+        throw new Error("Invalid HSFZ diagnostic response length");
+      this.onTrace?.("RX", frame);
+      const payload = frame.subarray(8);
+      if (payload.length === 3 && payload[0] === 0x7f && payload[2] === 0x78) {
+        // NRC 0x78 is intermediate. Keep waiting without re-sending the job.
+        // Bound the entire pending phase even if the ECU repeats NRC 0x78.
+        if (!pending) { deadline = Date.now() + 30000; pending = true; }
+        continue;
+      }
+      return encodeBmwFast(0xf1, frame[6], payload);
+    }
   }
 
   getPort(index: number): number { void index; return 0; }

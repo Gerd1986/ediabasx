@@ -59,6 +59,13 @@ function encodeImmString(text: string): Uint8Array {
 }
 
 describe("Interpreter", () => {
+  it("preserves buffers larger than 255 bytes in default VM registers", async () => {
+    const reply = "Z".repeat(311);
+    const code = Uint8Array.from([0x00, 0x18, 0x1f, ...encodeImmString(reply), 0x1d, 0]);
+    const interpreter = new Interpreter(createPrg(code));
+    await interpreter.execute("TEST");
+    expect(interpreter.getState().registers.s[3]).toBe(reply);
+  });
   it("executes a job and collects results", async () => {
     const nameBytes = encodeImmString("VALUE");
     const code = new Uint8Array([

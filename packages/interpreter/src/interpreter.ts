@@ -1200,7 +1200,8 @@ export class Interpreter {
       );
     }
 
-    const registers = options.registers ?? new RegisterSet();
+    // Match SSIZE/ArrayMaxSize so long diagnostic replies are not truncated.
+    const registers = options.registers ?? new RegisterSet({ maxStringSize: ARRAY_MAX_SIZE });
     const flags = options.flags ?? new Flags();
     const callStack = options.callStack ?? new CallStack();
     const dataStack = options.dataStack ?? new DataStack();

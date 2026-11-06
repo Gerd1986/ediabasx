@@ -63,6 +63,10 @@ jobs:
         shell: pwsh
         run: pnpm --filter @gerd1986/doip32 test
 
+      - name: Test ENET responses and interpreter
+        shell: pwsh
+        run: pnpm exec vitest run packages/interface-enet/src packages/interpreter/src
+
       - name: Package DoIP32.exe
         shell: pwsh
         run: pnpm --filter @gerd1986/doip32 dist:win
@@ -79,8 +83,8 @@ jobs:
         if: github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: doip32-v0.2.5
-          name: DoIP32 v0.2.5
+          tag_name: doip32-v0.2.6
+          name: DoIP32 v0.2.6
           prerelease: true
           generate_release_notes: true
-          files: apps/doip32/dist/DoIP32-0.2.5-Windows.exe
+          files: apps/doip32/dist/DoIP32-0.2.6-Windows.exe
