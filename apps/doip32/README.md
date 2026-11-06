@@ -22,3 +22,7 @@ transport where required), followed by the Windows desktop UI.
 
 pnpm --filter @gerd1986/doip32 build
 node apps/doip32/dist/main.js <ecuPath> <gateway-ip> <sgbd.prg> [job] [params...]
+
+## v0.2.5
+
+Connecting always uses the current vehicle IP and port from the UI, including changes made after loading the SGBD or discovering a BMW. The loaded SGBD and job list remain available when switching endpoints.

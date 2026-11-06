@@ -11,7 +11,7 @@ ipcMain.handle("pick-ecu-path",async()=>{const r=await dialog.showOpenDialog({pr
 ipcMain.handle("pick-sgbd",async()=>{const r=await dialog.showOpenDialog({properties:["openFile"],filters:[{name:"BMW SGBD",extensions:["prg","grp"]}]});return r.canceled?undefined:r.filePaths[0]});
 ipcMain.handle("open-sgbd",async(_e,cfg)=>{if(!cfg?.ecuPath?.trim()||!cfg?.sgbd?.trim())throw new Error("Bitte ECU/PRG-Verzeichnis und PRG/GRP-Datei auswählen.");const ecu=await stat(cfg.ecuPath);const sgbd=await stat(cfg.sgbd);if(!ecu.isDirectory())throw new Error("ECU/PRG-Pfad ist kein Verzeichnis.");if(!sgbd.isFile())throw new Error("PRG/GRP-Pfad ist keine Datei.");if(session)await session.disconnect().catch(()=>undefined);session=new Doip32Session({ecuPath:cfg.ecuPath,host:cfg.host,port:Number(cfg.port||6801),onTrace:(direction,data)=>_e.sender.send("wire-trace",{direction,hex:Array.from(data,b=>b.toString(16).padStart(2,"0")).join(" ").toUpperCase(),time:new Date().toLocaleTimeString()})});return await session.openSgbd(cfg.sgbd)});
 ipcMain.handle("discover-enet", async () => discoverEnet());
-ipcMain.handle("connect",async()=>{if(!session)throw new Error("Zuerst PRG/GRP laden");await session.connect();return true});
+ipcMain.handle("connect",async(_e,cfg: { host: string; port: string | number })=>{if(!session)throw new Error("Zuerst PRG/GRP laden");await session.connect(cfg?.host, Number(cfg?.port));return true});
 ipcMain.handle("disconnect",async()=>{await session?.disconnect();return true});
 ipcMain.handle("run-job",async(_e,job:string,params:string[])=>{if(!session)throw new Error("Zuerst PRG/GRP laden");return await session.run(job,params)});
 app.whenReady().then(createWindow);
