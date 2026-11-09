@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { Interpreter } from "./interpreter";
 import { RegisterSet } from "./registers";
 import { Flags } from "./flags";
+import { SimulationInterface } from "@emdzej/ediabasx-interface-base";
 import { EdiabasErrorCodes } from "@emdzej/ediabasx-core";
 import type { PrgFile, PrgJob, PrgHeader, PrgMetadata, PrgTable } from "@emdzej/ediabasx-best-parser";
 
@@ -59,12 +60,39 @@ function encodeImmString(text: string): Uint8Array {
 }
 
 describe("Interpreter", () => {
-  it("preserves buffers larger than 255 bytes in default VM registers", async () => {
-    const reply = "Z".repeat(311);
+  it.each([311, 1511, 8192, 16383])("preserves %i bytes in default VM registers", async length => {
+    const reply = "Z".repeat(length);
     const code = Uint8Array.from([0x00, 0x18, 0x1f, ...encodeImmString(reply), 0x1d, 0]);
     const interpreter = new Interpreter(createPrg(code));
     await interpreter.execute("TEST");
     expect(interpreter.getState().registers.s[3]).toBe(reply);
+  });
+  it("preserves a 100-entry BDC history through XSEND and register copying", async () => {
+    const reply = new Uint8Array(1511);
+    // BMW-FAST extended length + 1504-byte UDS payload + checksum.
+    reply.set([0x80, 0xf1, 0x40, 0, 0x05, 0xe0, 0x62, 0xda, 0xc6, 100]);
+    for (let i = 0; i < 100; i++) {
+      const offset = 10 + i * 15;
+      reply[offset] = i + 1;
+      for (let j = 1; j < 15; j++) reply[offset + j] = (i * 17 + j) & 0xff;
+    }
+    reply[1510] = reply.subarray(0, 1510).reduce((sum, byte) => (sum + byte) & 0xff, 0);
+    const iface = new SimulationInterface();
+    await iface.connect();
+    iface.send = async () => undefined;
+    iface.receive = async () => reply;
+    // XSEND, copy the binary response, report SSIZE and export both buffers.
+    const code = Uint8Array.from([
+      0x2a, 0x11, 0x1f, 0x1d, 0x00, 0x11, 0x1e, 0x1f, 0xb5, 0x40, 0x18,
+      0x3f, 0x81, ...encodeImmString("REPLY"), 0x1f,
+      0x3f, 0x81, ...encodeImmString("COPIED"), 0x1e, 0x1d, 0,
+    ]);
+    const interpreter = new Interpreter(createPrg(code));
+    const results = await interpreter.execute("TEST", { communicationInterface: iface });
+    const state = interpreter.getState();
+    expect(state.registers.l[0]).toBe(16384);
+    expect(results[0].find(result => result.name === "REPLY")?.value).toEqual(reply);
+    expect(results[0].find(result => result.name === "COPIED")?.value).toEqual(reply);
   });
   it("executes a job and collects results", async () => {
     const nameBytes = encodeImmString("VALUE");

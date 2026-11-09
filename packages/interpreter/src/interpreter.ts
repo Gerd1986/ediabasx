@@ -127,9 +127,9 @@ const EDIABAS_MAGIC = "@EDIABAS OBJECT";
 const EDIABAS_DATA_OFFSET = 0xa0;
 const EDIABAS_XOR_KEY = 0xf7;
 
-// Array buffer limits (mirror EdiabasNet ArrayMaxBufSize / ArrayMaxSize defaults).
-// EdiabasNet sets _arrayMaxBufSize=1024 by default; ArrayMaxSize = ArrayMaxBufSize - 1.
-const ARRAY_MAX_BUF_SIZE = 1024;
+// Expanded BEST2 array capacity for long BDC diagnostic histories.
+// Keep SSIZE, register capacity and indexed-operation bounds in sync.
+const ARRAY_MAX_BUF_SIZE = 16 * 1024;
 const ARRAY_MAX_SIZE = ARRAY_MAX_BUF_SIZE - 1;
 
 const OpAddrModes = {

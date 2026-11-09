@@ -34,3 +34,7 @@ Connecting always uses the current vehicle IP and port from the UI, including ch
 - Use the interpreter's 1023-byte default array capacity instead of truncating VM string registers at 255 bytes.
 
 A successful JOB_STATUS does not establish that an SGBD matches the vehicle's data layout. Use an SGBD version appropriate for the ECU.
+
+## v0.2.7
+
+The BEST2 VM now uses a 16 KiB array buffer (16,383 usable bytes per default S register). SSIZE and indexed operations use the same bound. This preserves BDC ZV history responses containing 100 records (1,504-byte UDS payload / 1,511-byte BMW-FAST telegram), which exceeded the previous 1,023-byte capacity. Regression tests cover binary XSEND replies, register copying and long ENET responses. Vehicle data and PRG files are not included in tests.
